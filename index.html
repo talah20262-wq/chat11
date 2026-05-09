@@ -8,57 +8,50 @@
         :root { --neon: #39ff14; --bg: #050505; --glass: rgba(255,255,255,0.03); }
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: var(--bg); color: #fff; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-
-        /* بوابة الدخول بكلمة سر 2009 */
         #access-gate {
             position: fixed; inset: 0; background: #000; z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .security-input {
+       .security-input {
             background: none; border: 2px solid var(--neon); color: var(--neon);
             padding: 15px; font-size: 2rem; text-align: center; border-radius: 15px; outline: none;
             box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); width: 200px;
         }
-
-        /* واجهة التحكم */
-        .dashboard {
+       .dashboard {
             display: none; width: 95%; max-width: 900px; height: 90vh;
             background: var(--glass); backdrop-filter: blur(15px);
             border: 1px solid rgba(57, 255, 20, 0.2); border-radius: 30px;
             padding: 30px; overflow-y: auto;
         }
-        .card {
+       .card {
             background: rgba(0,0,0,0.5); border: 1px solid #222;
             padding: 20px; border-radius: 20px; margin-bottom: 20px;
         }
-        .status-badge {
+       .status-badge {
             display: inline-block; padding: 5px 15px; border-radius: 50px;
             font-size: 12px; font-weight: bold; background: #ff003c; color: #fff;
         }
-        .online { background: var(--neon); color: #000; box-shadow: 0 0 10px var(--neon); }
-        
+       .online { background: var(--neon); color: #000; box-shadow: 0 0 10px var(--neon); }
         input, select, textarea {
             width: 100%; background: #111; border: 1px solid #333;
             color: #fff; padding: 12px; border-radius: 10px; margin: 10px 0; outline: none;
         }
-        .btn-deploy {
+       .btn-deploy {
             background: var(--neon); color: #000; border: none; padding: 15px;
             width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;
             text-transform: uppercase; transition: 0.3s;
         }
-        .btn-deploy:hover { transform: scale(1.02); box-shadow: 0 0 20px var(--neon); }
+       .btn-deploy:hover { transform: scale(1.02); box-shadow: 0 0 20px var(--neon); }
+       .btn-deploy:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
-
-    <!-- الدخول بكلمة السر 2009 -->
     <div id="access-gate">
         <h1 style="color:var(--neon); letter-spacing: 5px;">M.NAJM SECURITY</h1>
-        <input type="password" id="pass-field" class="security-input" maxlength="4" oninput="validate(this.value)">
+        <input type="password" id="pass-field" class="security-input" maxlength="4">
         <p style="color:#444; margin-top:15px;">ENTER MASTER CODE</p>
     </div>
 
-    <!-- المنصة الرئيسية -->
     <div id="main-app" class="dashboard">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2 style="color:var(--neon)">M.NAJM AI UNIT</h2>
@@ -66,48 +59,111 @@
         </div>
 
         <div class="card">
-            <h3>🔗 Webhook Configuration (Official API)</h3>
-            <p style="font-size: 12px; color: #888;">استخدم هذا الرابط في لوحة Meta Developers لربط السيرفر.</p>
-            <input type="text" readonly value="https://m-najm-node.vercel.app/api/webhook">
+            <h3>🔗 Webhook Configuration</h3>
+            <p style="font-size: 12px; color: #888;">استخدم هذا الرابط في لوحة Meta Developers</p>
+            <input type="text" id="webhook-url" readonly>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <input type="text" placeholder="Verify Token (2009)">
-                <input type="text" placeholder="Phone Number ID">
+                <input type="text" id="verify-token" placeholder="Verify Token">
+                <input type="text" id="phone-id" placeholder="Phone Number ID">
             </div>
+            <input type="password" id="wa-token" placeholder="WhatsApp Access Token">
+            <input type="password" id="gemini-key" placeholder="Gemini API Key">
         </div>
 
         <div class="card">
             <h3>🧠 AI Engine Personalization</h3>
             <input type="text" id="bot-name" placeholder="اسم البوت (مثلاً: رنا من طلة)">
-            <textarea id="bot-prompt" rows="4" placeholder="اكتب تعليمات الرد (مثلاً: رد بلهجة مصرية ووضح عروض السوت والبلوزات لبراند طلة)"></textarea>
-            
+            <textarea id="bot-prompt" rows="4" placeholder="اكتب تعليمات الرد: رد بلهجة مصرية ووضح عروض السوت والبلوزات لبراند طلة"></textarea>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <select>
-                    <option>Gemini Pro (Recommended)</option>
-                    <option>GPT-4o Mini</option>
+                <select id="model">
+                    <option value="gemini-pro">Gemini Pro</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                 </select>
-                <select>
-                    <option>تأخير طبيعي (2 ثانية)</option>
-                    <option>رد فوري</option>
+                <select id="delay">
+                    <option value="2000">تأخير طبيعي 2 ثانية</option>
+                    <option value="0">رد فوري</option>
                 </select>
             </div>
         </div>
 
-        <button class="btn-deploy" onclick="deploy()">Deploy AI System 🚀</button>
+        <button class="btn-deploy" id="deploy-btn" onclick="deploy()">Deploy AI System 🚀</button>
     </div>
 
     <script>
-        function validate(val) {
-            if(val === '2009') {
-                document.getElementById('access-gate').style.display = 'none';
-                document.getElementById('main-app').style.display = 'block';
+        const API_BASE = 'https://m-najm-node.vercel.app'; // غيره لدومينك
+
+        document.getElementById('webhook-url').value = `${API_BASE}/api/webhook`;
+
+        document.getElementById('pass-field').addEventListener('input', async (e) => {
+            if(e.target.value.length === 4) {
+                const res = await fetch(`${API_BASE}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: e.target.value })
+                });
+                if(res.ok) {
+                    document.getElementById('access-gate').style.display = 'none';
+                    document.getElementById('main-app').style.display = 'block';
+                    loadConfig();
+                } else {
+                    e.target.style.borderColor = '#ff003c';
+                    setTimeout(() => e.target.style.borderColor = 'var(--neon)', 500);
+                }
+            }
+        });
+
+        async function loadConfig() {
+            const res = await fetch(`${API_BASE}/api/config`);
+            if(res.ok) {
+                const cfg = await res.json();
+                document.getElementById('verify-token').value = cfg.verify_token || '';
+                document.getElementById('phone-id').value = cfg.phone_id || '';
+                document.getElementById('bot-name').value = cfg.bot_name || '';
+                document.getElementById('bot-prompt').value = cfg.bot_prompt || '';
+                document.getElementById('model').value = cfg.model || 'gemini-pro';
+                document.getElementById('delay').value = cfg.delay || '2000';
+                if(cfg.active) {
+                    setOnline();
+                }
             }
         }
 
-        function deploy() {
+        async function deploy() {
+            const btn = document.getElementById('deploy-btn');
+            btn.disabled = true;
+            btn.innerText = 'جاري النشر...';
+
+            const config = {
+                verify_token: document.getElementById('verify-token').value,
+                phone_id: document.getElementById('phone-id').value,
+                wa_token: document.getElementById('wa-token').value,
+                gemini_key: document.getElementById('gemini-key').value,
+                bot_name: document.getElementById('bot-name').value,
+                bot_prompt: document.getElementById('bot-prompt').value,
+                model: document.getElementById('model').value,
+                delay: document.getElementById('delay').value
+            };
+
+            const res = await fetch(`${API_BASE}/api/deploy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+
+            if(res.ok) {
+                setOnline();
+                alert("تم تشغيل النظام. البوت الآن جاهز للرد على واتساب.");
+            } else {
+                alert("فشل النشر. تأكد من البيانات.");
+            }
+            btn.disabled = false;
+            btn.innerText = 'Deploy AI System 🚀';
+        }
+
+        function setOnline() {
             const status = document.getElementById('node-status');
             status.innerText = "ACTIVE & SYNCED";
             status.classList.add('online');
-            alert("تم تشغيل نظام M.NAJM بنجاح. البوت الآن جاهز للرد على واتساب.");
         }
     </script>
 </body>
